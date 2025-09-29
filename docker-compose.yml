@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 订单系统应用
+  order-system:
+    image: order-system:latest
+    container_name: order-system
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=prod
+      - MONGODB_URI=mongodb://mongo:27017/order_system
+      - JWT_SECRET=your-production-jwt-secret-change-this
+      - PORT=3000
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - order-system-network
+
+  # MongoDB数据库
+  mongo:
+    image: mongo:4.4
+    container_name: mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=order_system
+    restart: unless-stopped
+    networks:
+      - order-system-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  order-system-network:
+    driver: bridge
