@@ -114,7 +114,7 @@ describe('OrderController测试', () => {
         .send(orderData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.code).toBe(0);
       expect(response.body.message).toBe('订单创建成功');
       expect(response.body.data).toBeTruthy();
       expect(response.body.data.user).toBe(user._id.toString());
@@ -173,9 +173,9 @@ describe('OrderController测试', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.orders).toBeTruthy();
-      expect(Array.isArray(response.body.orders)).toBe(true);
+      expect(response.body.code).toBe(0);
+      expect(response.body.data).toBeTruthy();
+      expect(Array.isArray(response.body.data)).toBe(true);
     });
 
     it('应该允许用户获取单个订单详情', async () => {
@@ -184,7 +184,7 @@ describe('OrderController测试', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.code).toBe(0);
       expect(response.body.data).toBeTruthy();
       expect(response.body.data._id).toBe(order._id.toString());
     });

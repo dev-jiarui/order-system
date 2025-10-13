@@ -5,6 +5,7 @@ const {
   UnauthorizedError,
   ValidationError
 } = require('../utils/errors');
+const { sendSuccess, formatOutputSuccess, sendResponse } = require('../utils/responseUtils');
 
 class OrderController {
   /**
@@ -19,20 +20,20 @@ class OrderController {
         ...req.body,
         user: req.user._id
       };
-      
+
       // 基本验证
       if (!orderData.products || orderData.products.length === 0) {
         throw new ValidationError({ products: '订单商品不能为空' });
       }
-      
+
       if (!orderData.shippingAddress) {
         throw new ValidationError({ shippingAddress: '收货地址不能为空' });
       }
-      
+
       if (!orderData.phoneNumber) {
         throw new ValidationError({ phoneNumber: '联系电话不能为空' });
       }
-      
+
       // 转换产品数据格式以匹配Order模型
       const items = orderData.products.map(product => ({
         productId: product.product,
@@ -40,27 +41,25 @@ class OrderController {
         quantity: product.quantity,
         price: product.price || 100
       }));
-      
+
       // 计算总金额
       const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
+
       // 重新构建订单数据
       orderData.items = items;
       orderData.totalAmount = totalAmount;
-      orderData.shippingAddress = typeof orderData.shippingAddress === 'object' 
-        ? JSON.stringify(orderData.shippingAddress) 
+      orderData.shippingAddress = typeof orderData.shippingAddress === 'object'
+        ? JSON.stringify(orderData.shippingAddress)
         : orderData.shippingAddress;
       orderData.phoneNumber = orderData.phoneNumber || '13800138000';
-      
+
       // 删除原始的products字段
       delete orderData.products;
-      
+
       const order = await OrderService.createOrder(orderData);
-      res.status(201).json({
-        success: true,
-        message: '订单创建成功',
-        data: order
-      });
+      const response = formatOutputSuccess(order, '订单创建成功');
+      response.statusCode = 201;
+      sendResponse(res, response);
     } catch (error) {
       next(error);
     }
@@ -83,12 +82,12 @@ class OrderController {
         startDate: req.query.startDate,
         endDate: req.query.endDate
       };
-      
+
       // 过滤掉undefined值
       Object.keys(filters).forEach(key => {
         if (filters[key] === undefined) delete filters[key];
       });
-      
+
       // 构建查询选项
       const options = {
         limit: parseInt(req.query.limit) || 10,
@@ -96,7 +95,7 @@ class OrderController {
         sortBy: req.query.sortBy || 'createdAt',
         sortOrder: req.query.sortOrder || 'desc'
       };
-      
+
       // 验证分页参数
       if (options.page < 1) {
         throw new ValidationError({ page: '页码必须大于0' });
@@ -104,12 +103,9 @@ class OrderController {
       if (options.limit < 1 || options.limit > 100) {
         throw new ValidationError({ limit: '每页数量必须在1-100之间' });
       }
-      
+
       const result = await OrderService.getAllOrders(filters, options);
-      res.status(200).json({
-        success: true,
-        ...result
-      });
+      sendSuccess(res, result.data, 'success', result.total, result.pagination);
     } catch (error) {
       next(error);
     }
@@ -125,16 +121,13 @@ class OrderController {
       if (!req.params.id) {
         throw new BadRequestError('订单ID不能为空');
       }
-      
+
       const order = await OrderService.getOrderById(req.params.id);
       if (!order) {
         throw new NotFoundError(`订单 ${req.params.id} 不存在`, 'ORDER_NOT_FOUND', req.params.id);
       }
-      
-      res.status(200).json({
-        success: true,
-        data: order
-      });
+
+      sendSuccess(res, order);
     } catch (error) {
       next(error);
     }
@@ -151,23 +144,25 @@ class OrderController {
       if (!req.user || !req.user._id) {
         throw new UnauthorizedError('需要用户认证');
       }
-      
+
       const options = {
         limit: parseInt(req.query.limit) || 10,
         page: parseInt(req.query.page) || 1,
         status: req.query.status
       };
-      
+
       // 验证分页参数
       if (options.page < 1) {
         throw new ValidationError({ page: '页码必须大于0' });
       }
-      
+
       const result = await OrderService.getUserOrders(req.user._id, options);
-      res.status(200).json({
-        success: true,
-        ...result
-      });
+      const pagination = {
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
+      sendSuccess(res, result.orders, 'success', result.total, pagination);
     } catch (error) {
       next(error);
     }
@@ -184,31 +179,27 @@ class OrderController {
       if (!req.params.id) {
         throw new BadRequestError('订单ID不能为空');
       }
-      
+
       const { auditResult, reason } = req.body;
-      
+
       if (!auditResult || !['approved', 'rejected'].includes(auditResult)) {
         throw new ValidationError({ auditResult: '审核结果必须是approved或rejected' });
       }
-      
+
       if (auditResult === 'rejected' && !reason) {
         throw new ValidationError({ reason: '拒绝审核必须提供原因' });
       }
-      
+
       const auditor = req.user?.username || 'system';
-      
+
       const updatedOrder = await OrderService.auditOrder(
         req.params.id,
         auditResult,
         reason,
         auditor
       );
-      
-      res.status(200).json({
-        success: true,
-        message: '订单审核成功',
-        data: updatedOrder
-      });
+
+      sendSuccess(res, updatedOrder, '订单审核成功');
     } catch (error) {
       next(error);
     }
@@ -225,19 +216,15 @@ class OrderController {
       if (!req.params.id) {
         throw new BadRequestError('订单ID不能为空');
       }
-      
+
       const { status } = req.body;
       if (!status) {
         throw new ValidationError({ status: '订单状态不能为空' });
       }
-      
+
       const updatedOrder = await OrderService.updateOrderStatus(req.params.id, status);
-      
-      res.status(200).json({
-        success: true,
-        message: '订单状态更新成功',
-        data: updatedOrder
-      });
+
+      sendSuccess(res, updatedOrder, '订单状态更新成功');
     } catch (error) {
       next(error);
     }
@@ -254,19 +241,15 @@ class OrderController {
       if (!req.params.id) {
         throw new BadRequestError('订单ID不能为空');
       }
-      
+
       const { reason } = req.body;
       if (!reason || reason.trim() === '') {
         throw new ValidationError({ reason: '取消原因不能为空' });
       }
-      
+
       const updatedOrder = await OrderService.cancelOrder(req.params.id, reason);
-      
-      res.status(200).json({
-        success: true,
-        message: '订单取消成功',
-        data: updatedOrder
-      });
+
+      sendSuccess(res, updatedOrder, '订单取消成功');
     } catch (error) {
       next(error);
     }

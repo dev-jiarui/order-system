@@ -7,6 +7,7 @@ const {
   ValidationError,
   ConflictError
 } = require('../utils/errors');
+const { sendSuccess, formatOutputSuccess, sendResponse } = require('../utils/responseUtils');
 
 class AuthController {
   /**
@@ -68,9 +69,7 @@ class AuthController {
         { expiresIn: '24h' }
       );
       
-      res.status(201).json({
-        success: true,
-        message: '注册成功',
+      const response = formatOutputSuccess({
         token,
         user: {
           id: user._id,
@@ -78,7 +77,10 @@ class AuthController {
           email: user.email,
           role: user.role
         }
-      });
+      }, '注册成功');
+      
+      response.statusCode = 201;
+      sendResponse(res, response);
     } catch (error) {
       next(error);
     }
@@ -125,9 +127,7 @@ class AuthController {
         { expiresIn: '24h' }
       );
       
-      res.status(200).json({
-        success: true,
-        message: '登录成功',
+      sendSuccess(res, {
         token,
         user: {
           id: user._id,
@@ -135,7 +135,7 @@ class AuthController {
           email: user.email,
           role: user.role
         }
-      });
+      }, '登录成功');
     } catch (error) {
       next(error);
     }

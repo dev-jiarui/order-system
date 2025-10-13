@@ -49,11 +49,45 @@ cp .env.dev .env
 - `JWT_SECRET`: JWT签名密钥
 - `NODE_ENV`: 运行环境
 
+### 数据库初始化
+
+首次运行项目前，建议执行数据库初始化脚本来创建索引：
+
+```bash
+# 开发环境
+npm run init-db:dev
+
+# 测试环境
+npm run init-db:uat
+
+# 生产环境
+npm run init-db:prod
+```
+
 ### 启动服务
 
 #### 开发模式
 ```bash
 npm run dev
+```
+
+本地debug启动配置
+```
+    {
+      "name": "启动开发环境",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/order-system/index.js",
+      "cwd": "${workspaceFolder}/order-system",
+      "env": {
+        "NODE_ENV": "dev"
+      },
+      "envFile": "${workspaceFolder}/order-system/.env.dev",
+      "console": "integratedTerminal",
+      "restart": true,
+      "runtimeExecutable": "node",
+      "skipFiles": ["<node_internals>/**"]
+    }
 ```
 
 #### 生产模式

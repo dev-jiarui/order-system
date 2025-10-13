@@ -47,11 +47,11 @@ describe('AuthController测试', () => {
         .send(userData)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.code).toBe(0);
       expect(response.body.message).toBe('注册成功');
-      expect(response.body.token).toBeTruthy();
-      expect(response.body.user.username).toBe(userData.username);
-      expect(response.body.user.email).toBe(userData.email);
+      expect(response.body.data.token).toBeTruthy();
+      expect(response.body.data.user.username).toBe(userData.username);
+      expect(response.body.data.user.email).toBe(userData.email);
       
       // 验证用户是否已保存到数据库
       const savedUser = await User.findOne({ username: userData.username });
@@ -145,12 +145,12 @@ describe('AuthController测试', () => {
         })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.code).toBe(0);
       expect(response.body.message).toBe('登录成功');
-      expect(response.body.token).toBeTruthy();
+      expect(response.body.data.token).toBeTruthy();
       
       // 验证令牌是否有效
-      const decoded = jwt.verify(response.body.token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(response.body.data.token, process.env.JWT_SECRET);
       expect(decoded.userId).toBeTruthy();
     });
 

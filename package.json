@@ -9,7 +9,11 @@
     "uat": "NODE_ENV=uat node index.js",
     "prod": "NODE_ENV=prod node index.js",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "init-db": "node scripts/init-db.js",
+    "init-db:dev": "NODE_ENV=dev node scripts/init-db.js",
+    "init-db:uat": "NODE_ENV=uat node scripts/init-db.js",
+    "init-db:prod": "NODE_ENV=prod node scripts/init-db.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

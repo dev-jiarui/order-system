@@ -12,6 +12,7 @@ const {
   notFoundHandler,
   timeoutHandler
 } = require('./middleware/errorHandler');
+const { sendSuccess } = require('./utils/responseUtils');
 
 // 加载环境变量
 dotenv.config();
@@ -33,11 +34,10 @@ app.use('/api/auth', authRoutes);
 
 // 健康检查路由
 app.get('/health', (req, res) => {
-  res.status(200).json({
+  sendSuccess(res, {
     status: 'ok',
-    message: 'Order System is running',
     timestamp: new Date().toISOString()
-  });
+  }, 'Order System is running');
 });
 
 // 404路由处理 - 必须放在所有路由之后
