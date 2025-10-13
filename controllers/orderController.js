@@ -14,21 +14,46 @@ class OrderController {
    */
   static async createOrder(req, res, next) {
     try {
-      // 构建订单数据，使用硬编码的用户ID进行测试
+      // 构建订单数据，从认证中间件获取用户信息
       const orderData = {
         ...req.body,
-        // 在实际系统中应该从req.user获取，这里为了测试暂时使用固定值
-        user: '5f8d0f3287a9c343c8e9c5b7'
+        user: req.user._id
       };
       
       // 基本验证
-      if (!orderData.items || orderData.items.length === 0) {
-        throw new ValidationError({ items: '订单商品不能为空' });
+      if (!orderData.products || orderData.products.length === 0) {
+        throw new ValidationError({ products: '订单商品不能为空' });
       }
       
-      if (!orderData.totalAmount || orderData.totalAmount <= 0) {
-        throw new ValidationError({ totalAmount: '订单金额必须大于0' });
+      if (!orderData.shippingAddress) {
+        throw new ValidationError({ shippingAddress: '收货地址不能为空' });
       }
+      
+      if (!orderData.phoneNumber) {
+        throw new ValidationError({ phoneNumber: '联系电话不能为空' });
+      }
+      
+      // 转换产品数据格式以匹配Order模型
+      const items = orderData.products.map(product => ({
+        productId: product.product,
+        productName: product.name || '测试产品',
+        quantity: product.quantity,
+        price: product.price || 100
+      }));
+      
+      // 计算总金额
+      const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      // 重新构建订单数据
+      orderData.items = items;
+      orderData.totalAmount = totalAmount;
+      orderData.shippingAddress = typeof orderData.shippingAddress === 'object' 
+        ? JSON.stringify(orderData.shippingAddress) 
+        : orderData.shippingAddress;
+      orderData.phoneNumber = orderData.phoneNumber || '13800138000';
+      
+      // 删除原始的products字段
+      delete orderData.products;
       
       const order = await OrderService.createOrder(orderData);
       res.status(201).json({

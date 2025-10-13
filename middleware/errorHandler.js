@@ -93,8 +93,20 @@ const errorHandler = (err, req, res, next) => {
     // 添加请求路径到错误对象
     err.path = req.originalUrl;
     
-    // 格式化错误响应
-    const errorResponse = formatErrorResponse(err);
+    // 对于ValidationError，确保details正确传递
+    let errorResponse;
+    if (err instanceof ValidationError && err.details) {
+      errorResponse = {
+        success: false,
+        message: err.message,
+        errorCode: err.errorCode,
+        path: err.path,
+        details: err.details
+      };
+    } else {
+      // 格式化其他错误响应
+      errorResponse = formatErrorResponse(err);
+    }
     
     // 返回错误响应
     res.status(statusCode).json(errorResponse);

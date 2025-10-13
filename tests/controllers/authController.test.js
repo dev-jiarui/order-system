@@ -14,6 +14,11 @@ const createTestApp = () => {
   app.use(express.json());
   app.use('/api/auth', authRoutes);
   
+  // 添加受保护的测试路由
+  app.get('/api/protected', auth, (req, res) => {
+    res.json({ success: true, user: req.user.username });
+  });
+  
   // 添加错误处理中间件
   app.use(require('../../middleware/errorHandler').validationErrorHandler);
   app.use(require('../../middleware/errorHandler').databaseErrorHandler);
