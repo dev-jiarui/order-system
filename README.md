@@ -147,6 +147,9 @@ npm run test:watch
 
 测试命令会自动生成覆盖率报告，保存在 `coverage/` 目录下。
 
+本地测试报告示例：
+![alt text](image.png)
+
 ## 项目结构
 
 ```

@@ -31,9 +31,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/orders', orderRoutes);
 app.use('/api/auth', authRoutes);
 
-// 404路由处理
-app.use(notFoundHandler);
-
 // 健康检查路由
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -42,6 +39,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// 404路由处理 - 必须放在所有路由之后
+app.use(notFoundHandler);
 
 // 错误处理中间件链
 app.use(validationErrorHandler); // 验证错误处理
