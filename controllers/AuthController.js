@@ -17,7 +17,15 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { username, email, password, role } = req.body;
+      let { username, email, password, role } = req.body;
+      
+      // 解码Base64编码的密码
+      try {
+        password = Buffer.from(password, 'base64').toString('utf-8');
+      } catch (error) {
+        // 如果解码失败，可能是明文密码，直接使用
+        console.warn('密码解码失败，使用原始密码');
+      }
       
       // 参数验证
       if (!username || !email || !password) {
@@ -93,7 +101,15 @@ class AuthController {
    */
   static async login(req, res, next) {
     try {
-      const { username, password } = req.body;
+      let { username, password } = req.body;
+      
+      // 解码Base64编码的密码
+      try {
+        password = Buffer.from(password, 'base64').toString('utf-8');
+      } catch (error) {
+        // 如果解码失败，可能是明文密码，直接使用
+        console.warn('密码解码失败，使用原始密码');
+      }
       
       // 参数验证
       if (!username || !password) {
@@ -103,8 +119,13 @@ class AuthController {
         });
       }
       
-      // 查找用户
-      const user = await User.findOne({ username });
+      // 查找用户（支持用户名或邮箱登录）
+      const user = await User.findOne({ 
+        $or: [
+          { username: username },
+          { email: username }
+        ]
+      });
       if (!user) {
         throw new UnauthorizedError('用户名或密码错误', 'INVALID_CREDENTIALS');
       }
