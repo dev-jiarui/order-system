@@ -8,38 +8,10 @@ class ReservationService {
    * @returns {Promise<Object>} 创建的预订
    */
   static async createReservation(reservationData) {
-    try {
-      // 检查同一用户是否在同一时间段已有预订
-      const existingReservation = await Reservation.findOne({
-        user: reservationData.user,
-        arrivalTime: {
-          $gte: new Date(new Date(reservationData.arrivalTime).getTime() - 2 * 60 * 60 * 1000), // 前2小时
-          $lte: new Date(new Date(reservationData.arrivalTime).getTime() + 2 * 60 * 60 * 1000)  // 后2小时
-        },
-        status: { $in: ['Requested', 'Approved'] }
-      });
-
-      if (existingReservation) {
-        throw new ValidationError({ arrivalTime: '您在该时间段已有预订，请选择其他时间' });
-      }
-
-      const reservation = new Reservation(reservationData);
-      await reservation.save();
-      
-      // 填充用户信息
-      await reservation.populate('user', 'username email');
-      
-      return reservation;
-    } catch (error) {
-      if (error.name === 'ValidationError') {
-        const errors = {};
-        Object.keys(error.errors).forEach(key => {
-          errors[key] = error.errors[key].message;
-        });
-        throw new ValidationError(errors);
-      }
-      throw error;
-    }
+    const reservation = new Reservation(reservationData);
+    await reservation.save({ validateBeforeSave: false });
+    await reservation.populate('user', 'username email role');
+    return reservation;
   }
 
   /**
@@ -70,7 +42,7 @@ class ReservationService {
 
     const [reservations, total] = await Promise.all([
       Reservation.find(query)
-        .populate('user', 'username email')
+        .populate('user', 'username email role')
         .sort(sort)
         .skip(skip)
         .limit(limit),
@@ -142,7 +114,7 @@ class ReservationService {
 
     const [reservations, total] = await Promise.all([
       Reservation.find(query)
-        .populate('user', 'username email')
+        .populate('user', 'username email role')
         .sort(sort)
         .skip(skip)
         .limit(limit),
@@ -169,7 +141,7 @@ class ReservationService {
    */
   static async getReservationById(reservationId) {
     const reservation = await Reservation.findById(reservationId)
-      .populate('user', 'username email')
+      .populate('user', 'username email role')
       .populate('statusHistory.changedBy', 'username');
 
     if (!reservation) {
@@ -234,7 +206,7 @@ class ReservationService {
     Object.assign(reservation, updateData);
     await reservation.save();
     
-    await reservation.populate('user', 'username email');
+    await reservation.populate('user', 'username email role');
     return reservation;
   }
 
@@ -266,7 +238,7 @@ class ReservationService {
     }
 
     await reservation.updateStatus(status, reason, changedBy);
-    await reservation.populate('user', 'username email');
+    await reservation.populate('user', 'username email role');
     
     return reservation;
   }
@@ -286,7 +258,13 @@ class ReservationService {
     }
 
     // 检查权限：只有预订的用户才能取消
-    if (reservation.user.toString() !== userId) {
+    if (reservation.user.toString() !== userId.toString()) {
+      console.log('User ID mismatch:', {
+        reservationUser: reservation.user.toString(),
+        currentUser: userId.toString(),
+        reservationUserType: typeof reservation.user,
+        currentUserType: typeof userId
+      });
       throw new BadRequestError('您只能取消自己的预订');
     }
 
@@ -296,7 +274,7 @@ class ReservationService {
     }
 
     await reservation.updateStatus('Cancelled', reason, userId);
-    await reservation.populate('user', 'username email');
+    await reservation.populate('user', 'username email role');
     
     return reservation;
   }

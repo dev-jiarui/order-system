@@ -93,9 +93,11 @@ reservationSchema.pre('save', function(next) {
   next();
 });
 
-// 在状态变更时自动添加历史记录
+// 在状态变更时自动添加历史记录（仅在直接修改status字段时，不通过updateStatus方法时）
 reservationSchema.pre('save', function(next) {
-  if (this.isModified('status') && !this.isNew) {
+  // 只有在直接修改status且不是通过updateStatus方法时才自动添加历史记录
+  // updateStatus方法会设置一个标记来跳过这个自动添加
+  if (this.isModified('status') && !this.isNew && !this._skipStatusHistory) {
     this.statusHistory.push({
       status: this.status,
       changedAt: new Date()
@@ -160,7 +162,11 @@ reservationSchema.methods.updateStatus = function(newStatus, reason, changedBy) 
     reason: reason
   });
   
-  return this.save();
+  // 设置标记，跳过pre('save')钩子中的自动历史记录添加
+  this._skipStatusHistory = true;
+  
+  // 跳过验证保存，因为状态更新不需要验证arrivalTime
+  return this.save({ validateBeforeSave: false });
 };
 
 // 静态方法：按日期范围查询预订

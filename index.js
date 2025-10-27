@@ -6,6 +6,7 @@ const connectDB = require('./config/database');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/authRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
+const graphqlRoutes = require('./routes/graphqlRoutes');
 // 导入错误处理中间件
 const {
   errorHandler,
@@ -43,6 +44,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/orders', orderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api', graphqlRoutes); // GraphQL路由
 
 // 健康检查路由
 app.get('/health', (req, res) => {
